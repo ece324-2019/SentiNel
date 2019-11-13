@@ -21,7 +21,7 @@ class CNN(nn.Module):
             nn.Linear(100, 1)
         )
 
-    def forward(self, x):
+    def forward(self, x, length=None):
 
         x = self.embed(x)
         x = x.permute(1, 0, 2)

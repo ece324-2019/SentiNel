@@ -49,7 +49,7 @@ def main(args):
     TEXT = data.Field(sequential=True, lower=True, tokenize='spacy', include_lengths=True)
     LABELS = data.Field(sequential=False, use_vocab=False)
 
-    overfit_data = data.TabularDataset(path='data/overfit.tsv',format='tsv',skip_header=True,fields=[('text', TEXT), ('polarity', LABELS)])
+    overfit_data = data.TabularDataset(path='data/overfit.tsv',format='tsv',skip_header=True,fields=[('label', LABELS),('text', TEXT)])
 
     overfit_iter = data.BucketIterator((overfit_data), batch_size=(args.batch_size),sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
 
@@ -70,11 +70,11 @@ def main(args):
         accum_loss = 0.0
         for i, batch in enumerate(overfit_iter):
             optimizer.zero_grad()
-            feats, label = batch
-            # label = batch.label
-            print(feats)
+            feats, length = batch.text
+            label = batch.label
 
-            predictions = model(feats)
+
+            predictions = model(feats,length)
             batch_loss = loss_fnc(input=predictions, target=label.float())
 
             accum_loss += batch_loss.item()
