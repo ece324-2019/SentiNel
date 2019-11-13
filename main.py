@@ -51,7 +51,7 @@ def main(args):
 
     overfit_data = data.TabularDataset(path='data/overfit.tsv',format='tsv',skip_header=True,fields=[('text', TEXT), ('polarity', LABELS)])
 
-    overfit_iter = data.BucketIterator((overfit_data), batch_size=(args.batch_size),sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
+    overfit_iter = data.BucketIterator(overfit_data, batch_size=args.batch_size,sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
 
     TEXT.build_vocab(overfit_data)
 
@@ -66,43 +66,45 @@ def main(args):
     trainplotloss = []
 
 
-    for epoch in range(args.epochs):
-        accum_loss = 0.0
-        for i, batch in enumerate(overfit_iter):
-            optimizer.zero_grad()
-            feats, label = batch
-            # label = batch.label
-            print(feats)
+    # for epoch in range(args.epochs):
+    #     accum_loss = 0.0
+    for i, batch in enumerate(overfit_iter):
+        optimizer.zero_grad()
+        print(batch.polarity)
+        feats, label = batch
+        # print(label)
+        # label = batch.label
+        # print(feats)
 
-            predictions = model(feats)
-            batch_loss = loss_fnc(input=predictions, target=label.float())
-
-            accum_loss += batch_loss.item()
-
-            batch_loss.backward()
-            optimizer.step()
-        train_acc = evaluate(model, overfit_iter)
-        train_loss = accum_loss/len(overfit_iter)
-
-        trainplotacc.append(train_acc)
-        trainplotloss.append(train_loss)
-        print("Epoch: {} |Train Acc:{}| Train Loss: {}".format(epoch + 1, train_acc,train_loss))
-
-    print("Test Accuracy = ", train_acc)
-    plt.plot(trainplotacc, 'b', label="Train")
-    plt.title("Accuracy vs. Epoch")
-    plt.xlabel("Epoch")
-    plt.ylabel("Accuracy")
-    plt.legend()
-    plt.show()
-
-    plt.plot(trainplotloss, 'b', label="Train")
-    plt.title("Loss vs. Epoch")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.legend()
-    plt.show()
-
+    #         predictions = model(feats)
+    #         batch_loss = loss_fnc(input=predictions, target=label.float())
+    #
+    #         accum_loss += batch_loss.item()
+    #
+    #         batch_loss.backward()
+    #         optimizer.step()
+    #     train_acc = evaluate(model, overfit_iter)
+    #     train_loss = accum_loss/len(overfit_iter)
+    #
+    #     trainplotacc.append(train_acc)
+    #     trainplotloss.append(train_loss)
+    #     print("Epoch: {} |Train Acc:{}| Train Loss: {}".format(epoch + 1, train_acc,train_loss))
+    #
+    # print("Test Accuracy = ", train_acc)
+    # plt.plot(trainplotacc, 'b', label="Train")
+    # plt.title("Accuracy vs. Epoch")
+    # plt.xlabel("Epoch")
+    # plt.ylabel("Accuracy")
+    # plt.legend()
+    # plt.show()
+    #
+    # plt.plot(trainplotloss, 'b', label="Train")
+    # plt.title("Loss vs. Epoch")
+    # plt.xlabel("Epoch")
+    # plt.ylabel("Loss")
+    # plt.legend()
+    # plt.show()
+    #
 
 
 if __name__ == '__main__':
