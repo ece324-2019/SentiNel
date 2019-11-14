@@ -11,12 +11,14 @@ import matplotlib.pyplot as plt
 from models import *
 
 def load_model(lr,vocab,name): #loads model, loss function and optimizer
-    if name == "cnn":
-        model = CNN(args.emb_dim,vocab, args.num_filt,[2,4])
+    if name == 'baseline':
+        model = Baseline(100, vocab)
+    elif name == "cnn":
+        model = CNN(args.emb_dim,vocab, args.num_filt,[3,2])
     else:
         model = RNN(args.emb_dim, vocab, args.rnn_hidden_dim)
 
-    loss_fnc = torch.nn.BCEWithLogitsLoss()
+    loss_fnc = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(),lr = lr)
     return model, loss_fnc, optimizer
 
@@ -26,9 +28,14 @@ def evaluate(model, loader):
         feats, length = vbatch.text
         label = vbatch.label
         prediction = model(feats,length)
-        corr = (prediction > 0.5).squeeze().long() == label.long()
+        prediction = torch.sigmoid(prediction)
+        for j in range(len(prediction)):
+            if (prediction[j] > 0.50) and (label[j] == 4):
+                total_corr += 1
+            elif (prediction[j] <= 0.50) and (label[j] == 0):
+                total_corr += 1
 
-        total_corr += int(corr.sum())
+
     return float(total_corr)/len(loader.dataset)
 
 def validlosscalc(model,loss_fnc, loader):
@@ -51,7 +58,7 @@ def main(args):
 
     overfit_data = data.TabularDataset(path='data/overfit.tsv',format='tsv',skip_header=True,fields=[('label', LABELS),('text', TEXT)])
 
-    overfit_iter = data.BucketIterator((overfit_data), batch_size=(args.batch_size),sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
+    overfit_iter = data.Iterator((overfit_data), batch_size=(args.batch_size),sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
 
     TEXT.build_vocab(overfit_data)
 
@@ -107,10 +114,10 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=20)
+    parser.add_argument('--batch-size', type=int, default=200)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=25)
-    parser.add_argument('--model', type=str, default='cnn', help="Model type: rnn,cnn (Default: cnn)")
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--model', type=str, default='cnn', help="Model type: rnn,cnn,baseline (Default: baseline)")
     parser.add_argument('--emb-dim', type=int, default=100)
     parser.add_argument('--rnn-hidden-dim', type=int, default=100)
     parser.add_argument('--num-filt', type=int, default=50)

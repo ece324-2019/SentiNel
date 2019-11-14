@@ -2,6 +2,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class Baseline(nn.Module):
+
+    def __init__(self, embedding_dim, vocab):
+        super(Baseline, self).__init__()
+
+        self.embedding = nn.Embedding.from_pretrained(vocab.vectors)
+        self.fc = nn.Linear(embedding_dim, 1)
+
+    def forward(self, x, lengths=None):
+        #x = [sentence length, batch size]
+        embedded = self.embedding(x)
+        average = embedded.mean(0) # [sentence length, batch size, embedding_dim]
+        output = self.fc(average).squeeze(1)
+        return output
+
 class CNN(nn.Module):
     def __init__(self, embedding_dim, vocab, n_filters, filter_sizes):
         super(CNN, self).__init__()
