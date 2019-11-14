@@ -14,11 +14,11 @@ def load_model(lr,vocab,name): #loads model, loss function and optimizer
     if name == 'baseline':
         model = Baseline(100, vocab)
     elif name == "cnn":
-        model = CNN(args.emb_dim,vocab, args.num_filt,[3,2])
+        model = CNN(args.emb_dim,vocab, args.num_filt,[2,4])
     else:
         model = RNN(args.emb_dim, vocab, args.rnn_hidden_dim)
 
-    loss_fnc = torch.nn.MSELoss()
+    loss_fnc = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(),lr = lr)
     return model, loss_fnc, optimizer
 
@@ -28,9 +28,9 @@ def evaluate(model, loader):
         feats, length = vbatch.text
         label = vbatch.label
         prediction = model(feats,length)
-        prediction = torch.sigmoid(prediction)
+        # prediction = torch.sigmoid(prediction)
         for j in range(len(prediction)):
-            if (prediction[j] > 0.50) and (label[j] == 4):
+            if (prediction[j] > 0.50) and (label[j] == 1):
                 total_corr += 1
             elif (prediction[j] <= 0.50) and (label[j] == 0):
                 total_corr += 1
@@ -114,9 +114,9 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=200)
+    parser.add_argument('--batch-size', type=int, default=40)
     parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--model', type=str, default='cnn', help="Model type: rnn,cnn,baseline (Default: baseline)")
     parser.add_argument('--emb-dim', type=int, default=100)
     parser.add_argument('--rnn-hidden-dim', type=int, default=100)
