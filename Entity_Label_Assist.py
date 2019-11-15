@@ -1,8 +1,6 @@
 from google.cloud import language_v1
 from google.cloud.language_v1 import enums
-
-text_content = 'Grapes are good. Bananas are bad.'
-
+import pandas as pd
 
 def sample_analyze_entity_sentiment(text_content):
     """
@@ -29,16 +27,27 @@ def sample_analyze_entity_sentiment(text_content):
 
     response = client.analyze_entity_sentiment(document, encoding_type=encoding_type)
     # Loop through entitites returned from the API
+    result = []
     for entity in response.entities:
+        e_result = []
         print(u"Representative name for the entity: {}".format(entity.name))
+        e_result.append(entity.name)
         # Get entity type, e.g. PERSON, LOCATION, ADDRESS, NUMBER, et al
         print(u"Entity type: {}".format(enums.Entity.Type(entity.type).name))
+        e_result.append(enums.Entity.Type(entity.type).name)
+
         # Get the salience score associated with the entity in the [0, 1.0] range
         print(u"Salience score: {}".format(entity.salience))
         # Get the aggregate sentiment expressed for this entity in the provided document.
+        e_result.append(entity.salience)
+
         sentiment = entity.sentiment
+        e_result.append(entity.sentiment.score)
+
         print(u"Entity sentiment score: {}".format(sentiment.score))
         print(u"Entity sentiment magnitude: {}".format(sentiment.magnitude))
+        e_result.append(entity.sentiment.magnitude)
+
         # Loop over the metadata associated with entity. For many known entities,
         # the metadata is a Wikipedia URL (wikipedia_url) and Knowledge Graph MID (mid).
         # Some entity types may have additional metadata, e.g. ADDRESS entities
@@ -54,10 +63,14 @@ def sample_analyze_entity_sentiment(text_content):
             print(
                 u"Mention type: {}".format(enums.EntityMention.Type(mention.type).name)
             )
+        result.append(e_result)
+    return result
 
     # Get the language of the text, which will be the same as
     # the language specified in the request or, if not specified,
     # the automatically-detected language.
     print(u"Language of the text: {}".format(response.language))
 
-sample_analyze_entity_sentiment('Grapes are good. Bananas are bad.')
+
+r = sample_analyze_entity_sentiment('Grapes are great, apples are bad.')
+print(r)
