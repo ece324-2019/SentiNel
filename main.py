@@ -56,11 +56,21 @@ def main(args):
     TEXT = data.Field(sequential=True, lower=True, tokenize='spacy', include_lengths=True)
     LABELS = data.Field(sequential=False, use_vocab=False)
 
+    train_data, val_data, test_data = data.TabularDataset.splits(path='data/', train='train.tsv',
+                                                                 validation='validation.tsv', test='test.tsv',
+                                                                 format='tsv',
+                                                                 skip_header=True,
+                                                                 fields=[('label', LABELS),('text', TEXT)])
+
+    train_iter, val_iter, test_iter = data.Iterator.splits(
+        (train_data, val_data, test_data), batch_sizes=(args.batch_size, args.batch_size, args.batch_size),
+        sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
+
     overfit_data = data.TabularDataset(path='data/overfit.tsv',format='tsv',skip_header=True,fields=[('label', LABELS),('text', TEXT)])
 
     overfit_iter = data.Iterator((overfit_data), batch_size=(args.batch_size),sort_key=lambda x: len(x.text), device=None, sort_within_batch=True, repeat=False)
 
-    TEXT.build_vocab(overfit_data)
+    TEXT.build_vocab(overfit_data, train_data, val_data, test_data)
 
     TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100))
     vocab = TEXT.vocab
@@ -70,16 +80,17 @@ def main(args):
     model, loss_fnc, optimizer = load_model(args.lr,vocab,args.model)
 
     trainplotacc = []
+    validplotacc = []
     trainplotloss = []
+    validplotloss = []
 
 
     for epoch in range(args.epochs):
         accum_loss = 0.0
-        for i, batch in enumerate(overfit_iter):
+        for i, batch in enumerate(train_iter):
             optimizer.zero_grad()
             feats, length = batch.text
             label = batch.label
-
 
             predictions = model(feats,length)
             batch_loss = loss_fnc(input=predictions, target=label.float())
@@ -88,22 +99,29 @@ def main(args):
 
             batch_loss.backward()
             optimizer.step()
-        train_acc = evaluate(model, overfit_iter)
-        train_loss = accum_loss/len(overfit_iter)
+        train_acc = evaluate(model, train_iter)
+        train_loss = accum_loss/len(train_iter)
+        valid_acc = evaluate(model, val_iter)
+        valid_loss = validlosscalc(model, loss_fnc, val_iter)
 
         trainplotacc.append(train_acc)
+        validplotacc.append(valid_acc)
         trainplotloss.append(train_loss)
-        print("Epoch: {} |Train Acc:{}| Train Loss: {}".format(epoch + 1, train_acc,train_loss))
+        validplotloss += [valid_loss]
+        print("Epoch: {} | Train Acc:{}| Train Loss: {} | Valid Acc:{}| Valid Loss: {}".format(epoch + 1, train_acc, train_loss, valid_acc, valid_loss))
 
-    print("Test Accuracy = ", train_acc)
-    plt.plot(trainplotacc, 'b', label="Train")
+    print("Test Accuracy = ", evaluate(model, test_iter))
+    plt.plot(trainplotacc, 'b--', label="Train")
+    plt.plot(validplotacc, 'r', label="Valid")
+    # plt.yticks([0.0,0.2,0.4,0.6,0.8,1.0])
     plt.title("Accuracy vs. Epoch")
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.legend()
     plt.show()
 
-    plt.plot(trainplotloss, 'b', label="Train")
+    plt.plot(trainplotloss, 'b--', label="Train")
+    plt.plot(validplotloss, 'r', label="Valid")
     plt.title("Loss vs. Epoch")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
@@ -114,9 +132,9 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=40)
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--batch-size', type=int, default=50)
+    parser.add_argument('--lr', type=float, default=0.0001)
+    parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--model', type=str, default='cnn', help="Model type: rnn,cnn,baseline (Default: baseline)")
     parser.add_argument('--emb-dim', type=int, default=100)
     parser.add_argument('--rnn-hidden-dim', type=int, default=100)
