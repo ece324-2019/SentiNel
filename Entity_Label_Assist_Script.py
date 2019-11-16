@@ -5,9 +5,10 @@ treebank_data = pd.read_csv('C:\\Users\\Sonali\\PycharmProjects\\ece324\\FinalPr
 print(treebank_data.head)
 print(treebank_data.shape)
 
-for i in range(0,11853):
-    sentence = treebank_data['sentence'][i]
-    results = sample_analyze_entity_sentiment(sentence)
-    treebank_data['result'][i] = results
+for i in range(8001,10000):
+     sentence = treebank_data['sentence'][i]
+     results = sample_analyze_entity_sentiment(sentence)
+     treebank_data['result'][i] = results
+     print(i)
 
-treebank_data.to_csv('C:\\Users\\Sonali\\PycharmProjects\\ece324\\FinalProject\\stanfordSentimentTreebank\\stanfordSentimentTreebank\\datasetSentencesLabelled.txt', sep='\t', index='False')
+treebank_data.to_csv('C:\\Users\\Sonali\\PycharmProjects\\ece324\\FinalProject\\stanfordSentimentTreebank\\stanfordSentimentTreebank\\datasetSentencesLabelledRIP.txt', sep='\t', index='False')
