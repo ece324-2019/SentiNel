@@ -49,3 +49,31 @@ class CNN(nn.Module):
         x = self.linear(x)
 
         return x.squeeze()
+
+
+class RNN(nn.Module):
+    def __init__(self, embedding_dim, vocab, hidden_dim):
+        super(RNN, self).__init__()
+
+        ######
+
+        # Section 6.0 YOUR CODE HERE
+        self.embed = nn.Embedding(len(vocab), embedding_dim)
+        self.embed.from_pretrained(vocab.vectors)
+        self.gru = nn.GRU(embedding_dim, hidden_dim)
+        self.linear = nn.Sequential(
+            nn.Linear(hidden_dim, 1)
+        )
+        ######
+    def forward(self, x, lengths):
+
+        ######
+
+        # Section 6.0 YOUR CODE HERE
+
+        x = self.embed(x)
+        x = nn.utils.rnn.pack_padded_sequence(x, lengths)
+        _, h = self.gru(x)
+        x = self.linear(h)
+        return x.squeeze()
+        ######

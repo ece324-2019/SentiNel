@@ -7,6 +7,9 @@ import spacy
 import argparse
 import os
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
+import seaborn as sn
+import pandas as pd
 
 from models import *
 
@@ -34,9 +37,23 @@ def evaluate(model, loader):
                 total_corr += 1
             elif (prediction[j] <= 0.50) and (label[j] == 0):
                 total_corr += 1
-
-
     return float(total_corr)/len(loader.dataset)
+
+def confustionmatrix(model,loader):
+    truth = []
+    couldbe = []
+    for i, vbatch in enumerate(loader):
+        feats, length = vbatch.text
+        label = vbatch.label
+        prediction = model(feats, length)
+        # prediction = torch.sigmoid(prediction)
+        for j in range(len(prediction)):
+            truth += [int(label[j])]
+            if (prediction[j] > 0.50):
+                couldbe += [1]
+            elif (prediction[j] <= 0.50):
+                couldbe += [0]
+    return truth, couldbe
 
 def validlosscalc(model,loss_fnc, loader):
     accum_loss = 0.0
@@ -83,8 +100,6 @@ def main(args):
     validplotacc = []
     trainplotloss = []
     validplotloss = []
-
-
     for epoch in range(args.epochs):
         accum_loss = 0.0
         for i, batch in enumerate(train_iter):
@@ -99,6 +114,7 @@ def main(args):
 
             batch_loss.backward()
             optimizer.step()
+
         train_acc = evaluate(model, train_iter)
         train_loss = accum_loss/len(train_iter)
         valid_acc = evaluate(model, val_iter)
@@ -109,6 +125,13 @@ def main(args):
         trainplotloss.append(train_loss)
         validplotloss += [valid_loss]
         print("Epoch: {} | Train Acc:{}| Train Loss: {} | Valid Acc:{}| Valid Loss: {}".format(epoch + 1, train_acc, train_loss, valid_acc, valid_loss))
+
+    truth, couldbe = confustionmatrix(model,val_iter)
+    a = confusion_matrix(couldbe,truth)
+    df_cm = pd.DataFrame(a, range(2),range(2))
+    sn.set(font_scale=1.4)  # for label size
+    sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
+    plt.show()
 
     print("Test Accuracy = ", evaluate(model, test_iter))
     plt.plot(trainplotacc, 'b--', label="Train")

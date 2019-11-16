@@ -18,9 +18,9 @@ c = (valid_data['label'].isin(["1"]).sum())
 d = (valid_data['label'].isin(["0"]).sum())
 e = (test_data['label'].isin(["1"]).sum())
 f = (test_data['label'].isin(["0"]).sum())
-print("Train data | Positive:",a, "| Negative: ",b)
-print("Valid data | Positive:",c, " | Negative: ",d)
-print("Test data  | Positive:",e, "| Negative: ",f)
+print("Train data | Positive:",a*2, "| Negative: ",b*2)
+print("Valid data | Positive:",c*2, " | Negative: ",d*2)
+print("Test data  | Positive:",e*2, "| Negative: ",f*2)
 
 
 #
