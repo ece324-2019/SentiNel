@@ -21,6 +21,10 @@ def load_model(lr,vocab,name): #loads model, loss function and optimizer
     else:
         model = RNN(args.emb_dim, vocab, args.rnn_hidden_dim)
 
+    if torch.cuda.is_available():
+        print("Using Cuda")
+        torch.set_default_tensor_type(torch.cuda.FloatTensor)
+        model.cuda()
     loss_fnc = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.parameters(),lr = lr)
     return model, loss_fnc, optimizer
@@ -31,7 +35,7 @@ def evaluate(model, loader):
         feats, length = vbatch.text
         label = vbatch.label
         prediction = model(feats,length)
-        # prediction = torch.sigmoid(prediction)
+        prediction = torch.sigmoid(prediction)
         for j in range(len(prediction)):
             if (prediction[j] > 0.50) and (label[j] == 1):
                 total_corr += 1
@@ -96,6 +100,8 @@ def main(args):
 
     model, loss_fnc, optimizer = load_model(args.lr,vocab,args.model)
 
+    # train_iter = overfit_iter
+
     trainplotacc = []
     validplotacc = []
     trainplotloss = []
@@ -126,12 +132,12 @@ def main(args):
         validplotloss += [valid_loss]
         print("Epoch: {} | Train Acc:{}| Train Loss: {} | Valid Acc:{}| Valid Loss: {}".format(epoch + 1, train_acc, train_loss, valid_acc, valid_loss))
 
-    truth, couldbe = confustionmatrix(model,val_iter)
-    a = confusion_matrix(couldbe,truth)
-    df_cm = pd.DataFrame(a, range(2),range(2))
-    sn.set(font_scale=1.4)  # for label size
-    sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
-    plt.show()
+    # truth, couldbe = confustionmatrix(model,val_iter)
+    # a = confusion_matrix(couldbe,truth)
+    # df_cm = pd.DataFrame(a, range(2),range(2))
+    # sn.set(font_scale=1.4)  # for label size
+    # sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
+    # plt.show()
 
     print("Test Accuracy = ", evaluate(model, test_iter))
     plt.plot(trainplotacc, 'b--', label="Train")
@@ -155,9 +161,9 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=50)
-    parser.add_argument('--lr', type=float, default=0.0001)
-    parser.add_argument('--epochs', type=int, default=200)
+    parser.add_argument('--batch-size', type=int, default=64)
+    parser.add_argument('--lr', type=float, default=0.000001)
+    parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--model', type=str, default='cnn', help="Model type: rnn,cnn,baseline (Default: baseline)")
     parser.add_argument('--emb-dim', type=int, default=100)
     parser.add_argument('--rnn-hidden-dim', type=int, default=100)
