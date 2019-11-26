@@ -18,6 +18,8 @@ def load_model(lr,vocab,name): #loads model, loss function and optimizer
         model = Baseline(100, vocab)
     elif name == "cnn":
         model = CNN(args.emb_dim,vocab, args.num_filt,[2,4])
+    elif name == "skipgram":
+        model = SkipGramModel(len(vocab), args.emb_dim)
     else:
         model = RNN(args.emb_dim, vocab, args.rnn_hidden_dim)
 
@@ -26,6 +28,7 @@ def load_model(lr,vocab,name): #loads model, loss function and optimizer
         torch.set_default_tensor_type(torch.cuda.FloatTensor)
         model.cuda()
     loss_fnc = torch.nn.BCEWithLogitsLoss()
+    # loss_fnc = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(),lr = lr)
     return model, loss_fnc, optimizer
 
@@ -142,7 +145,6 @@ def main(args):
     print("Test Accuracy = ", evaluate(model, test_iter))
     plt.plot(trainplotacc, 'b--', label="Train")
     plt.plot(validplotacc, 'r', label="Valid")
-    # plt.yticks([0.0,0.2,0.4,0.6,0.8,1.0])
     plt.title("Accuracy vs. Epoch")
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
@@ -162,9 +164,9 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=0.000001)
-    parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--model', type=str, default='cnn', help="Model type: rnn,cnn,baseline (Default: baseline)")
+    parser.add_argument('--lr', type=float, default=0.0001)
+    parser.add_argument('--epochs', type=int, default=150)
+    parser.add_argument('--model', type=str, default='rnn', help="Model type: rnn,cnn,baseline,skipgram (Default: baseline)")
     parser.add_argument('--emb-dim', type=int, default=100)
     parser.add_argument('--rnn-hidden-dim', type=int, default=100)
     parser.add_argument('--num-filt', type=int, default=50)
