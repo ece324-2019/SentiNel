@@ -1,6 +1,6 @@
 import torch
 import torch.optim as optim
-
+import time
 import torchtext
 from torchtext import data
 import spacy
@@ -18,8 +18,8 @@ def load_model(lr,vocab,name): #loads model, loss function and optimizer
         model = Baseline(100, vocab)
     elif name == "cnn":
         model = CNN(args.emb_dim,vocab, args.num_filt,[2,4])
-    elif name == "skipgram":
-        model = SkipGramModel(len(vocab), args.emb_dim)
+    elif name == "lstm":
+        model = RNNlstm(args.emb_dim, vocab, args.rnn_hidden_dim)
     else:
         model = RNN(args.emb_dim, vocab, args.rnn_hidden_dim)
 
@@ -109,6 +109,9 @@ def main(args):
     validplotacc = []
     trainplotloss = []
     validplotloss = []
+    testplotacc = []
+    testplotloss = []
+    start = time.time()
     for epoch in range(args.epochs):
         accum_loss = 0.0
         for i, batch in enumerate(train_iter):
@@ -123,28 +126,28 @@ def main(args):
 
             batch_loss.backward()
             optimizer.step()
-
+        end = time.time()
         train_acc = evaluate(model, train_iter)
         train_loss = accum_loss/len(train_iter)
         valid_acc = evaluate(model, val_iter)
         valid_loss = validlosscalc(model, loss_fnc, val_iter)
+        test_acc = evaluate(model, test_iter)
+        test_loss = validlosscalc(model, loss_fnc, test_iter)
 
         trainplotacc.append(train_acc)
         validplotacc.append(valid_acc)
         trainplotloss.append(train_loss)
         validplotloss += [valid_loss]
-        print("Epoch: {} | Train Acc:{}| Train Loss: {} | Valid Acc:{}| Valid Loss: {}".format(epoch + 1, train_acc, train_loss, valid_acc, valid_loss))
+        testplotacc.append(test_acc)
+        testplotloss.append(test_loss)
+        print("Time: {:.2f} | Epoch: {} | Train Acc:{}| Train Loss: {} | Valid Acc:{}| Valid Loss: {}".format(end-start,epoch + 1, train_acc, train_loss, valid_acc, valid_loss))
 
-    # truth, couldbe = confustionmatrix(model,val_iter)
-    # a = confusion_matrix(couldbe,truth)
-    # df_cm = pd.DataFrame(a, range(2),range(2))
-    # sn.set(font_scale=1.4)  # for label size
-    # sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
-    # plt.show()
+    torch.save(model, 'model_rnn_nosig.pt')
 
     print("Test Accuracy = ", evaluate(model, test_iter))
     plt.plot(trainplotacc, 'b--', label="Train")
     plt.plot(validplotacc, 'r', label="Valid")
+    plt.plot(testplotacc, 'g', label="Test")
     plt.title("Accuracy vs. Epoch")
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
@@ -153,20 +156,29 @@ def main(args):
 
     plt.plot(trainplotloss, 'b--', label="Train")
     plt.plot(validplotloss, 'r', label="Valid")
+    plt.plot(testplotloss, 'g', label="Test")
     plt.title("Loss vs. Epoch")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.legend()
     plt.show()
 
+    truth, couldbe = confustionmatrix(model, val_iter)
+    a = confusion_matrix(couldbe, truth)
+    print("Confusion Matrix")
+    print(a)
+    df_cm = pd.DataFrame(a, range(2), range(2))
+    sn.set(font_scale=1.4)  # for label size
+    sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
+    plt.show()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=0.0001)
+    parser.add_argument('--batch-size', type=int, default=100) #64
+    parser.add_argument('--lr', type=float, default=0.00001)
     parser.add_argument('--epochs', type=int, default=150)
-    parser.add_argument('--model', type=str, default='rnn', help="Model type: rnn,cnn,baseline,skipgram (Default: baseline)")
+    parser.add_argument('--model', type=str, default='rnn', help="Model type: rnn,cnn,baseline,ltsm")
     parser.add_argument('--emb-dim', type=int, default=100)
     parser.add_argument('--rnn-hidden-dim', type=int, default=100)
     parser.add_argument('--num-filt', type=int, default=50)
