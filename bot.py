@@ -26,7 +26,7 @@ def main(args):
     TEXT.vocab.load_vectors(torchtext.vocab.GloVe(name='6B', dim=100))
     vocab = TEXT.vocab
 
-    rnn = torch.load('model_rnn.pt')
+    rnn = torch.load('model_cnn.pt')
 
     while (1):
         print("Enter a sentence")
@@ -38,6 +38,7 @@ def main(args):
 
         prediction = rnn(token_tensor, lengths)
         # prediction = torch.sigmoid(prediction)
+        print(prediction)
         if prediction > 0.5:
             print("Model rnn: Positive", round(float(prediction), 3))
         elif prediction <= 0.5:
